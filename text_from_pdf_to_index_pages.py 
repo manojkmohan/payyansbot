@@ -1,0 +1,81 @@
+#!/usr/bin/python
+# -*- coding: utf-8 -*-
+import sys
+from pdfminer.pdfdocument import PDFDocument
+from pdfminer.pdfparser import PDFParser
+from pdfminer.pdfinterp import PDFResourceManager, PDFPageInterpreter
+from pdfminer.pdfdevice import PDFDevice, TagExtractor
+from pdfminer.pdfpage import PDFPage
+from pdfminer.converter import XMLConverter, HTMLConverter, TextConverter
+from pdfminer.cmapdb import CMapDB
+from pdfminer.layout import LAParams
+from pdfminer.image import ImageWriter
+import wikipedia
+import pagegenerators
+import codecs
+import payyans
+import pyPdf
+
+fname='/home/balasankarc/Downloads/Gadgil_report.pdf'
+payyan_instance = payyans.getInstance()
+pdfreader = pyPdf.PdfFileReader(open(fname))
+
+
+def get_text_from_pdf(i):
+print "Inside function"
+debug = 0
+password = ''
+pagenos = set()
+pagenos.add(i)
+maxpages = 0
+outfile = None
+outtype = None
+imagewriter = None
+layoutmode = 'normal'
+codec = 'utf-8'
+pageno = 1
+scale = 1
+caching = True
+showpageno = True
+laparams = LAParams()
+PDFDocument.debug = debug
+PDFParser.debug = debug
+CMapDB.debug = debug
+PDFResourceManager.debug = debug
+PDFPageInterpreter.debug = debug
+PDFDevice.debug = debug
+rsrcmgr = PDFResourceManager(caching=caching)
+outfp=open('/tmp/temp.txt','w')
+device = TextConverter(rsrcmgr, outfp, codec=codec, laparams=laparams,imagewriter=imagewriter)
+fp = file(fname, 'rb')
+interpreter = PDFPageInterpreter(rsrcmgr, device)
+for page in PDFPage.get_pages(fp, pagenos,maxpages=maxpages, password=password,caching=caching, check_extractable=True):
+interpreter.process_page(page)
+fp.close()
+device.close()
+outfp.close()
+outfp=open('/tmp/temp.txt','r')
+a = outfp.read()
+outfp.close()
+return a
+
+siteFamily	= 'wikisource'
+siteLangCode	= 'ml'
+#indexPage = ur'Gadgil_report.pdf' #സൂചിക താളിന്റെ പേര് രണ്ട് ' 'ന്റെ ഇടയിൽ കൊടുക്കുക. .djvu ചേർക്കാൻ മറക്കരുത്. 'സൂചിക' എന്ന് കൊടുക്കേണ്ട, അത് തന്നെ വന്നോളും.
+myNumber = pdfreader.getNumPages() #സൂചികാതാളുകളിലെ പേജുകളുടെ എണ്ണം കൊടുക്കുക.
+pageNamespaceId = 106 #ഗ്രന്ഥശാലയുടെ ഐഡി. മാറ്റേണ്ട ആവശ്യമില്ല.
+resultPage = ur'User:Balasankarc\Gadgil' #ഫലം സൂക്ഷിക്കേണ്ട താളിന്റെ പേര് രണ്ട് ' 'ന്റെ ഇടയിൽ കൊടുക്കുക. ഉദാ: User:Balasankarc\Test5
+
+wikiSite = wikipedia.Site(code=siteLangCode, fam=siteFamily)
+myResultPage=wikipedia.Page(site=wikiSite,title=resultPage)
+
+# ഇനിയാണ് മോനേ കളി... താളുകളിലെ ടെക്സ്റ്റ് എടുക്കുന്നു
+
+for i in range(1,myNumber+1):
+wikipedia.output("Page "+str(i)+"to be inserted")
+myText="Page : "+str(i)+" below"
+myResultPage.append(myText,comment="Test Script")
+myText=get_text_from_pdf(i)	#അങ്ങനെ ഉണ്ടെങ്കിൽ ലിവൻ എറർ കാണിക്കും. അതൊഴിവാക്കാനാണ് ആ try
+unicode_out=payyan_instance.ASCII2Unicode(myText.decode('utf-8'),'ambili')
+myResultPage.append(unicode_out,comment=ur"ASCII2Unicode")	
+wikipedia.stopme()
